@@ -6,8 +6,8 @@ from slugify import slugify
 # Create your models here.
 
 class User(AbstractUser):
-    bio = models.TextField()
-    avatar = models.ImageField(upload_to='\avatar', blank=True)
+    bio = models.TextField(blank=True, null=True)
+    avatar = models.ImageField(upload_to='\avatar', blank=True, null=True)
     email = models.EmailField(validators=[EmailValidator()])
 
     groups = models.ManyToManyField(
