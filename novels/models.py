@@ -7,7 +7,7 @@ from slugify import slugify
 
 class User(AbstractUser):
     bio = models.TextField(blank=True, null=True)
-    avatar = models.ImageField(upload_to='\avatar', blank=True, null=True)
+    avatar = models.ImageField(upload_to='avatar/', blank=True, null=True)
     email = models.EmailField(validators=[EmailValidator()])
 
     groups = models.ManyToManyField(
@@ -28,11 +28,14 @@ class User(AbstractUser):
     
 
 class Novel(models.Model):
-    title = models.CharField(max_length=100, unique=True)
+    title = models.CharField(max_length=100)
     description = models.TextField()
     slug = models.SlugField(blank=True, unique=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='novels')
-    is_published = models.DateTimeField(auto_now_add=True)
+    published_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=[ 'author','title'], name='unique_author_title')]
 
     def save(self, *args, **kwargs):
         if not self.slug:

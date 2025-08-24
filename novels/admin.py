@@ -12,7 +12,7 @@ class ChapterInline(admin.TabularInline):
 
 @admin.register(Novel)
 class NovelAdmin(admin.ModelAdmin):
-    list_display= ('title', 'author', 'is_published')
+    list_display= ('title', 'author', 'published_at')
     prepopulated_fields={"slug": ("title",)}
     inlines = [ChapterInline]
 
