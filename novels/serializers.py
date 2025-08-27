@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Novel, UserProfile, Chapter
+from .models import User, Novel, UserProfile, Chapter, Comment, Like
 from django.contrib.auth.password_validation import validate_password
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -45,11 +45,18 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user.save() ## This save the data to the database.
         return user
 
+class CommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
+        fields = ['comment', 'novel']
 
 class UserPreviewSerializer(serializers.ModelSerializer):
+    user_comments = CommentSerializer(many=True)
     class Meta:
         model = User
-        fields = ['username','email','bio', 'avatar']
+        fields = ['username','email','bio', 'avatar', 'user_comments']
+
 
 
 class ChapterSerializer(serializers.ModelSerializer):
@@ -64,10 +71,12 @@ class NovelSerializer(serializers.ModelSerializer):
     chapters = ChapterSerializer(many=True)
 
     total_chapters =  serializers.SerializerMethodField(read_only = True)
+    comments = serializers.SerializerMethodField()
+    total_likes = serializers.SerializerMethodField()
 
     class Meta:
         model = Novel
-        fields = ['title', 'description', 'chapters', 'total_chapters']
+        fields = ['title', 'description', 'chapters', 'total_chapters', 'comments', 'total_likes']
 
     def get_total_chapters(self, obj):
         return obj.chapters.count()
@@ -81,6 +90,14 @@ class NovelSerializer(serializers.ModelSerializer):
             Chapter.objects.create(novel = novel, **chapter_data)
         
         return novel
+    
+    def get_total_likes(self,obj):
+        return obj.novel_likes.count()
+    
+    def get_comments(self, obj):
+        return [f"{comment.comment} by {comment.user.username}" for comment in obj.comments.all()]
+    
+
 
 
             
