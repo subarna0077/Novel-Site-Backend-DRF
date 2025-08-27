@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import User, Novel, Chapter, UserProfile
+from .models import User, Novel, Chapter, UserProfile, Comment, Like
 
 #Tabular inline allows u to edit the related model together on the same page with parent
 #Since, chapter is related to its parent model Novel, when we open a Novel in a admin, we can add/edit it's chapters directly under
@@ -20,3 +20,5 @@ class NovelAdmin(admin.ModelAdmin):
 admin.site.register(User)
 admin.site.register(Chapter)
 admin.site.register(UserProfile)
+admin.site.register(Comment)
+admin.site.register(Like)

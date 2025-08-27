@@ -88,6 +88,30 @@ class UserProfile(models.Model):
         return f"{self.user.first_name} {self.user.last_name}"
 
 
+class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_comments')
+    novel = models.ForeignKey(Novel, on_delete=models.CASCADE, related_name='comments')
+    comment = models.TextField()
+
+    def __str__(self):
+        return f"{self.user.first_name} commented {self.comment[:30]} in {self.novel.title} novel"
+
+class Like(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="likes")
+    novel = models.ForeignKey(Novel, on_delete=models.CASCADE, related_name='novel_likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'novel']
+
+    def __str__(self):
+        return f"{self.user.username} liked {self.novel.title}"
+
+    
+
+    
+
+
 
 
 
