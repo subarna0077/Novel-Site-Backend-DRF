@@ -10,7 +10,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
-
 # Create your views here.
 
 class IsSelfOrAdmin(BasePermission):
@@ -77,7 +76,7 @@ class UserViewSet(viewsets.ModelViewSet): ## create update delete list users
     """
     @action(detail=False, methods=["get"], url_path="me")
     def me(self, request):
-    # Uses whatever serializer get_serializer_class() returns for action='me'
+    # Uses whatever serializer get_serializer_class() returns for action='get'
     # Passing request.user as instance for serialization (object → JSON)
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
@@ -87,6 +86,7 @@ class NovelViewSet(viewsets.ModelViewSet): ## create, update, delete, list novel
     queryset = Novel.objects.all()
     serializer_class = NovelSerializer
     authentication_classes = [JWTAuthentication]
+    lookup_field = "slug"
 
     def get_permissions(self):
         if self.action == 'list':
@@ -102,3 +102,12 @@ class NovelViewSet(viewsets.ModelViewSet): ## create, update, delete, list novel
 
     def perform_create(self, serializer):
         serializer.save(author = self.request.user)
+
+    @action(detail = False, methods=['get'], url_path="my-novels")
+    def my_novels(self, request):
+        novels = Novel.objects.filter(author = request.user)
+
+        ## this get_serializer gets the whatever serializer the get method is using and we passed the novels inside by filtering according to the logged in users.
+        serializer = self.get_serializer(novels, many=True)
+        return Response(serializer.data)
+    
