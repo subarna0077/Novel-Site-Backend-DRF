@@ -1,6 +1,7 @@
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet, NovelViewSet, UserCreateView, UserLoginView
+from .views import UserViewSet, NovelViewSet, UserCreateView, UserLoginView, NovelCommentViewSet
 from django.urls import path
+from rest_framework_nested.routers import NestedDefaultRouter
 
 
 router = DefaultRouter()
@@ -12,6 +13,9 @@ urlpatterns = [
 
 
 router.register('user', UserViewSet)
-router.register('novel', NovelViewSet)
+router.register('novels', NovelViewSet, basename='novel')
+novels_router = NestedDefaultRouter(router, 'novels', lookup= 'novel')
+novels_router.register('comments',NovelCommentViewSet, basename='novel-comments')
 
-urlpatterns += router.urls
+urlpatterns+= router.urls
+urlpatterns+= novels_router.urls

@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-
+import re
 class Command(BaseCommand):
 
     ## help -> String shown when using --help
@@ -9,3 +9,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         #Print output to console.
         self.stdout.write("Hello from custom command")
+        text = "Chapter I: Introduction\nChapter II: Getting Started\nChapter III: Advanced Topics"
+        pattern = r"Chapter\s+\w+"
+        matches = re.findall(pattern,text)
+        print(matches)

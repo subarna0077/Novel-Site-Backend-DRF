@@ -1,8 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics
-from .models import User, Novel
-from .serializers import UserCreateSerializer, UserPreviewSerializer, NovelSerializer
-from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission, IsAdminUser
+from .models import User, Novel, Comment
+from .serializers import UserCreateSerializer, UserPreviewSerializer, NovelSerializer, CommentSerializer
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission, IsAdminUser, SAFE_METHODS
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
@@ -10,15 +10,35 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+
 # Create your views here.
 
 class IsSelfOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
+
+        ## we returned boolean here because this class check if it pass the permission or not. if we returned true, permission is given otherwise denied
         return request.user.is_staff or obj == request.user
 
 class IsNovelOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user.is_staff or obj.author == request.user
+    
+class IsCommentOwnerOrAuthorOrReadOnly(BasePermission):   
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        
+        user = request.user
+
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        return (
+            obj.user_id == user.id or
+            obj.novel.author_id == user.id or
+            user.is_staff
+        )
 
 class UserLoginView(APIView):
     authentication_classes = []
@@ -74,13 +94,44 @@ class UserViewSet(viewsets.ModelViewSet): ## create update delete list users
     detail = True -> the action is tied to a single object
     detail = False -> the action is tied to the entire collection i.e. does'nt need a id
     """
-    @action(detail=False, methods=["get"], url_path="me")
+    @action(detail=False, methods=["get"], url_path="me", permission_classes=[IsAuthenticated])
     def me(self, request):
     # Uses whatever serializer get_serializer_class() returns for action='get'
     # Passing request.user as instance for serialization (object → JSON)
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
     
+    @action(detail=False, methods=['get'], url_path='me/comments', permission_classes = [IsAuthenticated])
+    def list_comments(self,request):
+        user = request.user
+        user_comments = user.user_comments.all()
+        serializer = CommentSerializer(user_comments, many=True)
+        return Response(serializer.data)
+
+    @action(detail = False, methods=['patch', 'delete','get'], url_path='me/comments/(?P<comment_id>\d+)', permission_classes = [IsAuthenticated])
+    def comments(self,request, comment_id = None):
+        user = request.user
+        try:
+            comment = user.user_comments.get(pk=comment_id)
+        except Comment.DoesNotExist:
+            return Response({"error": "Comment does not exists."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if request.method == 'GET':
+            serializer = CommentSerializer(comment)
+            return Response(serializer.data)
+        
+        if request.method == 'PATCH':
+            serializer = CommentSerializer(comment, data=request.data, partial = True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
+        
+        if request.method == 'DELETE':
+            comment.delete()
+            return Response({"message": "Comment deleted successfully"},status = status.HTTP_204_NO_CONTENT)
+
+
 
 class NovelViewSet(viewsets.ModelViewSet): ## create, update, delete, list novels
     queryset = Novel.objects.all()
@@ -95,7 +146,7 @@ class NovelViewSet(viewsets.ModelViewSet): ## create, update, delete, list novel
         if self.action in ['create', 'retrieve']:
             return [IsAuthenticated()]
             
-        if self.action in ['update', 'partial_update', 'delete']:
+        if self.action in ['update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsNovelOwnerOrAdmin()]
         
         return [IsAuthenticated()]
@@ -111,3 +162,14 @@ class NovelViewSet(viewsets.ModelViewSet): ## create, update, delete, list novel
         serializer = self.get_serializer(novels, many=True)
         return Response(serializer.data)
     
+class NovelCommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsCommentOwnerOrAuthorOrReadOnly]
+
+    def get_queryset(self):
+        novel_slug = self.kwargs(['novel_pk'])
+        if novel_slug:
+            return Comment.objects.filter(novel__slug = novel_slug)
+        return super().get_queryset()
