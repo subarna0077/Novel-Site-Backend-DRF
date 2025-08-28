@@ -14,7 +14,9 @@ class IsCommentOwnerOrAuthorOrReadOnly(BasePermission):
             return True
         
         user = request.user
-
+        ## think of the code below as a guard block
+        ## if the user is unauthenticated, then immediately deny permissions
+        ## returning false immediately blocks all the write operations for the unauthenticateed users
         if not request.user or not request.user.is_authenticated:
             return False
         
