@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.core.validators import EmailValidator
 from slugify import slugify
+import uuid
 
 # Create your models here.
 
@@ -33,6 +34,8 @@ class Novel(models.Model):
     slug = models.SlugField(blank=True, unique=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='novels')
     published_at = models.DateTimeField(auto_now_add=True)
+    free_chapters = models.PositiveIntegerField(default=3)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=[ 'author','title'], name='unique_author_title')]
@@ -63,6 +66,7 @@ class Chapter(models.Model):
     title = models.CharField(max_length=255, blank=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    is_premium = models.BooleanField(default=False)
 
     class Meta:
 
@@ -83,6 +87,7 @@ class Chapter(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_premium = models.BooleanField(default = False)
+    coins = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
@@ -106,6 +111,30 @@ class Like(models.Model):
 
     def __str__(self):
         return f"{self.user.username} liked {self.novel.title}"
+    
+class Payment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
+    novel = models.ForeignKey(Novel, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_id = models.UUIDField(default=uuid.uuid4)
+    status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('success', 'Success'), ('failed', 'Failed')], default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.novel.title} - {self.status}"
+    
+
+class PurchasedNovel(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='purchased_novels')
+    novel = models.ForeignKey(Novel, on_delete=models.CASCADE, related_name='purchased_users')
+    purchased_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'novel']
+
+    def __str__(self):
+        return f"{self.user.username} purchased {self.novel.title}"
+
 
     
 

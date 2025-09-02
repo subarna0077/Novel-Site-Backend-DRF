@@ -11,7 +11,6 @@ class NovelViewSet(viewsets.ModelViewSet): ## create, update, delete, list novel
     queryset = Novel.objects.all()
     serializer_class = NovelSerializer
     authentication_classes = [JWTAuthentication]
-    lookup_field = "slug"
 
     def get_permissions(self):
         if self.action == 'list':

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Novel, UserProfile, Chapter, Comment, Like
+from .models import User, Novel, UserProfile, Chapter, Comment, Like, Payment, PurchasedNovel
 from django.contrib.auth.password_validation import validate_password
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -63,7 +63,7 @@ class ChapterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chapter
-        fields = ['number', 'title', 'content']
+        fields = ['number', 'novel', 'title', 'content']
 
 
 class NovelSerializer(serializers.ModelSerializer):
@@ -98,7 +98,19 @@ class NovelSerializer(serializers.ModelSerializer):
         return [f"{comment.comment} by {comment.user.username}" for comment in obj.comments.all()]
     
 
+class PurchasedNovelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PurchasedNovel
+        fields = '__all__'
 
+    
+class PaymentSerializer(serializers.ModelSerializer):
+    transaction_id = serializers.ReadOnlyField()
+    novel = serializers.CharField(source = 'novel.title', read_only = True)
+
+    class Meta:
+        model = Payment
+        fields = ['amount', 'novel', 'transaction_id', 'status']
 
             
             

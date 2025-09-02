@@ -2,6 +2,8 @@ from .views.novel_views import NovelViewSet
 from .views.auth_views import UserCreateView, UserLoginView
 from .views.comment_views import NovelCommentViewSet
 from .views.user_views import UserViewSet
+from .views.chapter_views import ChapterViewSet
+from .views.payment_views import PaymentCreationView
 
 
 # from django.shortcuts import get_object_or_404
