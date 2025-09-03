@@ -1,8 +1,8 @@
 from rest_framework import viewsets, status
-from novels.models import User, Comment
+from novels.models import User, Comment, PurchasedNovel
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
-from novels.serializers import UserCreateSerializer , UserPreviewSerializer, CommentSerializer
+from novels.serializers import UserCreateSerializer , UserPreviewSerializer, CommentSerializer, PurchasedNovelSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from novels.permissions import IsSelfOrAdmin
@@ -73,4 +73,11 @@ class UserViewSet(viewsets.ModelViewSet): ## create update delete list users
         if request.method == 'DELETE':
             comment.delete()
             return Response({"message": "Comment deleted successfully"},status = status.HTTP_204_NO_CONTENT)
+        
+    @action(detail = False, methods=['get'], url_path='me/purchased-novels', permission_classes=[IsAuthenticated])
+    def get_purchased_novels(self, request):
+        user = request.user
+        novels = PurchasedNovel.objects.filter(user = user)
+        serializer = PurchasedNovelSerializer(novels, many=True)
+        return Response(serializer.data)
 
